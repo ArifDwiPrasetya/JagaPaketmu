@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0,shrink-to-fit=no">
+    <meta name="color-scheme" content="light only">
+    <title>Document</title>
+
+    <!-- Bootstrap CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <!-- Font awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <!-- Ajax & JQuery -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.js"></script>
+    <!-- Sweet alert -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- Font Brand -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lobster+Two:ital,wght@1,400;1,700&display=swap"
+        rel="stylesheet">
+
+    <style>
+        body {
+            /* background-color: #f0eded; */
+            background-color: #FEFDE9;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        nav {
+            background-color: #5FB9DC;
+            padding: 0;
+            margin: 0;
+        }
+
+        .header {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 0 0 1em;
+        }
+
+        .navbar-brand {
+            color: white;
+            font-size: 2em;
+            font-family: "Lobster Two", sans-serif;
+            font-weight: bolder;
+            font-style: italic;
+            text-shadow: 1px 1px 1px black;
+            text-decoration: underline;
+        }
+
+        .container {
+            width: 100%;
+            height: 100vh;
+            padding: 0;
+        }
+
+        .card {
+            width: 60%;
+            margin: 5% auto auto auto;
+        }
+
+        .card-body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .card-title {
+            color: #067caa;
+            text-align: center;
+        }
+
+        .form-floating {
+            width: 80%;
+            margin: 2em auto 2em auto;
+        }
+
+        .label-foto {
+            text-align: center;
+            font-weight: 700;
+        }
+
+        footer {
+            background-color: rgb(59, 58, 58);
+            color: white;
+            text-align: center;
+            padding: 3%;
+        }
+
+        @media screen and (max-width:576px) {
+            .navbar-brand {
+                font-size: 1.5em;
+            }
+
+            .card {
+                width: 90%;
+            }
+
+        }
+    </style>
+    <script>
+        $(document).ready(function () {
+            {% if id_paket %}
+            window.Interval = setInterval(getOpenBox, 1000)
+            {% endif %}
+        })
+        function getOpenBox() {
+            $.ajax({
+                type: 'GET',
+                url: '/statusBox',
+                data: {},
+                success: function (response) {
+                    if (response['status'] === 'False') {
+                        clearInterval(window.Interval)
+                        $('.spinner-border').toggleClass('d-none')
+                        $('.card-foto').toggleClass('d-none')
+                    }
+                }
+            })
+        }
+
+        function postResi() {
+            let resi = $("#resi").val()
+            if (resi) {
+                $.ajax({
+                    type: "POST",
+                    url: "/cekResi",
+                    data: { resi_give: resi },
+                    success: function (response) {
+                        if (response['result'] === "Tidak Valid") {
+                            Swal.fire({
+                                title: "Nomor resi tidak valid!",
+                                text: "Pastikan anda tidak salah alamat",
+                                icon: "error",
+                                showConfirmButton: false,
+                                timer: 2000
+                            });
+                        }
+                        else {
+                            let id_paket = response['id']
+                            window.location.href=`/validasi/${id_paket}`
+                        }
+                    }
+                })
+            }
+            else {
+                Swal.fire({
+                    title: "Harap mengisi nomor resi pengiriman 🙏!",
+                    icon: "warning",
+                    showConfirmButton: false,
+                    timer: 2000
+                });
+            }
+
+        }
+        function upload(id) {
+            let id_paket = id
+            let file_foto = $('#file').prop("files")[0]
+
+            if (id && file_foto) {
+                let form_data = new FormData();
+
+                form_data.append("id_give", id_paket);
+                form_data.append("file_give", file_foto);
+
+                $.ajax({
+                    type: "POST",
+                    url: "/upload",
+                    data: form_data,
+                    contentType: false,
+                    processData: false,
+                    success: function (response) {
+                        if (response['result'] === 'Gagal mengupload Foto') {
+                            Swal.fire({
+                                title: "Gagal mengupload foto",
+                                icon: "error",
+                                showConfirmButton: false,
+                                timer: 3000
+                            });
+                        } else {
+                            Swal.fire({
+                                    title: "Berhasil!",
+                                    text: `Upload foto berhasil`,
+                                    icon: "success",
+                                    showConfirmButton: false,
+                                    timer: 2000
+                                });
+                                // Menunda pengalihan halaman selama 3 detik
+                                setTimeout(function () {
+                                    window.location.href='/validasi/sukses_upload'
+                                }, 2000);
+                        }
+                    },
+                });
+            } else {
+                Swal.fire({
+                    icon: "warning",
+                    title: "File foto tidak boleh kosong",
+                    showConfirmButton: false,
+                    timer: 2000
+                });
+                return
+            }
+        }
+
+    </script>
+
+</head>
+
+<body>
+    <nav class="navbar sticky-top">
+        <section class="header">
+            <a class="navbar-brand" href="#">Jaga Paketmu</a>
+        </section>
+    </nav>
+
+    <section class="container">
+        {%if not sukses_upload %}
+            {%if not id_paket %}
+            <div class="card card-resi">
+                <div class="card-body">
+                    <h3 class="card-title">Masukkan Nomor Resi Pengiriman untuk Membukan Kotak Paket</h3>
+                    <div class="form-floating">
+                        <input type="text" class="form-control" id="resi" placeholder="Masukkan Nomor Resi">
+                        <label for="resi">Masukkan Nomor</label>
+                    </div>
+                    <a onclick="postResi()" class="btn btn-outline-info open">Buka Kotak</a>
+                </div>
+            </div>
+            {%else%}
+            <div class="spinner-border text-info d-flex" role="status"
+                style="margin:20% auto auto auto; width: 50px; height:50px ;">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <div class="card card-foto d-none">
+                <div class="card-body">
+                    <h3 class="card-title">Kotak Berhasil Dibuka ✅</h3>
+                    <div class="mb-3">
+                        <label for="file" class="form-label label-foto mb-4">Tolong masukkan bukti foto bahwa paket
+                            benar-benar
+                            telah diletakkan di dalam kotak paket ! 📸🙏</label>
+                        <input class="form-control" type="file" id="file">
+                    </div>
+                    <button onclick="upload('{{id_paket}}')" class="btn btn-info upload">Upload</button>
+                </div>
+            </div>
+        {%endif%}
+        {%else%}
+        <div class="card card-foto">
+            <div class="card-body">
+                <h3 class="card-title">Foto berhasil diupload ✅</h3>
+                <div class="mb-3">
+                    <h3>Harap menutup kotak paket, Selamat Bekerja Kembali 😊🙏</h3>
+                </div>
+            </div>
+        </div>
+        {%endif%}
+    </section>
+
+    <footer>
+        <h6>Develope by Arif Dwi Prasetya | TRK</h6>
+    </footer>
+
+    <!-- Bootstrap JS (including Popper.js) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
+        crossorigin="anonymous"></script>
+</body>
+
+</html>
